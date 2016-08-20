@@ -129,7 +129,8 @@ class Document(AttributeDict):
         """Do field validations and set defaults
 
         :param kwargs: init parameters
-        :return: :raise RequiredValidationError:
+        :return: prepared fields
+        :raise RequiredValidationError
         """
 
         # It validates values on set, check fields.SimpleField#__set_value__
@@ -175,11 +176,9 @@ class Document(AttributeDict):
 
         # put everything extra in the document
         if cls._meta.ALLOW_EXTRA_FIELDS:
-            kwargs = {k: v for k, v in kwargs.items()}
+            return kwargs
         else:
-            kwargs = {k: v for k, v in kwargs.items() if k in fields}
-
-        return kwargs
+            return {k: v for k, v in kwargs.items() if k in fields}
 
     def _post_init_validation(self):
         """Validate model after init with validate_%s extra methods
