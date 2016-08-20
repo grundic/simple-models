@@ -11,7 +11,6 @@ from simplemodels.exceptions import ValidationError, DefaultValueError, \
     ImmutableFieldError, FieldRequiredError, ModelNotFoundError
 from simplemodels.utils import is_document
 
-
 __all__ = ['SimpleField', 'IntegerField', 'FloatField', 'DecimalField',
            'CharField', 'BooleanField', 'ListField', 'DocumentField',
            'DictField']
@@ -24,7 +23,7 @@ class SimpleField(object):
     CHOICES_TYPES = (tuple, list, set)
 
     def __init__(self, default=None, required=False, choices=None, name=None,
-                 validators=None, error_text='', immutable=False, **kwargs):
+                 validators=None, error_text='', immutable=False, path=None, **kwargs):
         """
         :param name: field name, it's set in the DocumentMeta
         :param default: default value
@@ -39,6 +38,7 @@ class SimpleField(object):
         self._name = None           # set by object holder (Document)
         self._holder_name = None    # set by object holder (Document)
         self._verbose_name = kwargs.get('verbose_name', name)
+        self._path = path
 
         self.required = required
         if choices and not isinstance(choices, SimpleField.CHOICES_TYPES):

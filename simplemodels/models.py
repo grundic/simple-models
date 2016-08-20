@@ -118,10 +118,10 @@ class Document(AttributeDict):
 
     def __init__(self, **kwargs):
         kwargs = self._unprotect_fields(kwargs)
-        kwargs = self._clean_kwargs(kwargs)
 
         # dict init
         prepared_fields = self._prepare_fields(kwargs)
+        prepared_fields = self._clean_kwargs(prepared_fields)
         super(Document, self).__init__(**prepared_fields)
         self._post_init_validation()
 
@@ -138,7 +138,7 @@ class Document(AttributeDict):
 
             # Get field value or set default
             default_val = getattr(field_obj, 'default')
-            field_val = kwargs.get(field_name)
+            field_val = self._get_path(kwargs, path=field_obj._path, name=field_obj.name)
             if field_val is None:
                 field_val = default_val() if callable(default_val) \
                     else default_val
@@ -163,6 +163,36 @@ class Document(AttributeDict):
                 kwargs[field_name] = val
 
         return kwargs
+
+    @classmethod
+    def _get_path(cls, root, path, name):
+        """
+        Helper method to read value from nested data structure by given path.
+
+        :param root: root object with data
+        :param path: beginning of the path
+        :param name: last element name
+        :return: extracted value or None
+        """
+
+        if isinstance(path, six.string_types):
+            path = path.split('/')
+
+        path = list(filter(None, path)) if path else []
+        path = path + [name]
+        cur = root
+        for seg in path:
+            try:
+                cur = cur[seg]
+            except (KeyError, IndexError):
+                return None
+            except TypeError:
+                try:
+                    seg = int(seg)
+                    cur = cur[seg]
+                except (ValueError, KeyError, IndexError, TypeError):
+                    return None
+        return cur
 
     @classmethod
     def _clean_kwargs(cls, kwargs):

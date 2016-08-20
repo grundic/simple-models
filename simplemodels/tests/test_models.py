@@ -402,6 +402,50 @@ class DocumentTest(TestCase):
         company = Company.create(data)
         self.assertIsInstance(company, Company)
 
+    def test_field_path(self):
+        class User(Document):
+            name = CharField()
+            salary = IntegerField(path='data/foo/bar/')
+
+        data = {
+            'name': 'John Smith',
+            'data': {
+                'foo': {
+                    'bar': {
+                        'salary': 100500
+                    }
+                }
+            }
+        }
+
+        user = User.create(data)
+        self.assertEqual(user.salary, 100500)
+        self.assertEqual(user.name, 'John Smith')
+        with self.assertRaises(AttributeError):
+            self.assertIsNone(user.data)
+
+    def test_field_non_existing_path(self):
+        class User(Document):
+            name = CharField()
+            salary = IntegerField(path='some/non/existing/path')
+
+        data = {
+            'name': 'John Smith',
+            'data': {
+                'foo': {
+                    'bar': {
+                        'salary': 100500
+                    }
+                }
+            }
+        }
+
+        user = User.create(data)
+        self.assertIsNone(user.salary)
+        self.assertEqual(user.name, 'John Smith')
+        with self.assertRaises(AttributeError):
+            self.assertIsNone(user.some)
+
 
 class DocumentMetaOptionsTest(TestCase):
     def test_nested_meta(self):
