@@ -150,7 +150,7 @@ class Document(AttributeDict):
                 kwargs[field_name] = val
             elif issubclass(type(field_obj), DocumentField):
                 # build empty nested document
-                val = field_obj.__set_value__(self, {})
+                val = field_obj.__set_value__(self, field_val or {})
                 kwargs[field_name] = val
             else:
                 # field is not presented in the given init parameters

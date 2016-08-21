@@ -460,6 +460,33 @@ class DocumentTest(TestCase):
         with self.assertRaises(AttributeError):
             self.assertIsNone(user.data)
 
+    def test_field_path_with_document_field(self):
+
+        class Salary(Document):
+            value = IntegerField()
+
+        class User(Document):
+            class Meta(object):
+                ALLOW_EXTRA_FIELDS = True
+
+            name = CharField()
+            salary = DocumentField(Salary, path='data/foo/bar/')
+
+        data = {
+            'name': 'John Smith',
+            'data': {
+                'foo': {
+                    'bar': {
+                        'salary': {'value': 100500}
+                    }
+                }
+            }
+        }
+
+        user = User.create(data)
+        self.assertEqual(user.salary.value, 100500)
+        self.assertEqual(user.data.foo.bar.salary.value, 100500)
+
     def test_field_non_existing_path(self):
         class User(Document):
             name = CharField()
