@@ -187,6 +187,8 @@ class Document(AttributeDict):
             except (KeyError, IndexError):
                 return None
             except TypeError:
+                # either string index in a list, or a parent that
+                # doesn't support indexing
                 try:
                     seg = int(seg)
                     cur = cur[seg]
