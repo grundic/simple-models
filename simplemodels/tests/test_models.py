@@ -404,6 +404,40 @@ class DocumentTest(TestCase):
         company = Company.create(data)
         self.assertIsInstance(company, Company)
 
+    def test_get_path(self):
+        data = {
+            'level_0_name': 'level_0_name_value',
+            'level_0_list': [
+                1, 3, 5, 7
+            ],
+            'level_0_includes': {
+                'level_1_name': 'level_1_name_value',
+                'level_1_list': [
+                    2, 4, 6, 8
+                ],
+                'level_1_includes': {
+                    'level_2_list':
+                        ['foo', 'bar', 'baz']
+                }
+            }
+        }
+
+        self.assertEqual(Document._get_path(data, None, 'NON-EXISTING'), None)
+        self.assertEqual(Document._get_path(data, None, 'level_0_name'), 'level_0_name_value')
+        self.assertEqual(Document._get_path(data, None, 'level_0_list'), [1, 3, 5, 7])
+        self.assertEqual(Document._get_path(data, 'level_0_list', 1), 3)
+        self.assertEqual(Document._get_path(data, ['level_0_list'], 1), 3)
+        self.assertEqual(Document._get_path(data, 'level_0_includes', 'level_1_name'), 'level_1_name_value')
+        self.assertEqual(Document._get_path(data, ['level_0_includes'], 'level_1_list'), [2, 4, 6, 8])
+        self.assertEqual(Document._get_path(data, ['level_0_includes', 'level_1_list'], '3'), 8)
+        self.assertEqual(Document._get_path(data, 'level_0_includes/level_1_list', '3'), 8)
+        self.assertEqual(Document._get_path(data, ['level_0_includes', 'level_1_list'], '-1'), 8)
+        self.assertEqual(Document._get_path(data, ['level_0_includes', 'level_1_list'], -1), 8)
+        self.assertEqual(Document._get_path(data, ['level_0_includes', 'level_1_includes'], 'level_2_list'),
+                         ['foo', 'bar', 'baz'])
+        self.assertEqual(Document._get_path(data, ['level_0_includes', 'level_1_includes', 'level_2_list'], 0),
+                         'foo')
+
     def test_field_path(self):
         class User(Document):
             name = CharField()
