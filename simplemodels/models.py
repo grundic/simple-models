@@ -102,7 +102,10 @@ class Document(AttributeDict):
         if data is None:
             data = {}
 
-        data = self._clean_kwargs(data)
+        if not isinstance(data, dict):
+            raise ModelValidationError("Data mush be dictionary, but got '%s'!" % type(data))
+
+        data = self._clean_data(data)
 
         # dict init
         prepared_fields = self._prepare_fields(data, **kwargs)
@@ -153,7 +156,7 @@ class Document(AttributeDict):
         return data
 
     @classmethod
-    def _clean_kwargs(cls, kwargs):
+    def _clean_data(cls, kwargs):
         """Clean with excluding extra fields if the model has
         ALLOW_EXTRA_FIELDS meta flag on
 

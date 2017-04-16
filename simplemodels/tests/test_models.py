@@ -430,11 +430,7 @@ class DocumentTest(TestCase):
             name = CharField()
 
         with self.assertRaises(ModelValidationError):
-            user = User(None)
-            self.assertIsNone(user)
-
-            user = User.create('this must be a dict')
-            self.assertIsNone(user)
+            User('this must be a dict')
 
 
 class DocumentMetaOptionsTest(TestCase):
