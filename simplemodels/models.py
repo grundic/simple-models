@@ -5,8 +5,7 @@ import inspect
 import weakref
 from simplemodels.exceptions import ImmutableDocumentError, \
     ModelValidationError
-from simplemodels.fields import SimpleField, DocumentField
-
+from simplemodels.fields import SimpleField, DocumentField, ListField
 
 __all__ = ['Document', 'ImmutableDocument']
 
@@ -32,7 +31,7 @@ class AttributeDict(dict):
             raise AttributeError("Attribute '{}' doesn't exist".format(name))
 
     def __setattr__(self, key, value):
-        if isinstance(value, dict):
+        if isinstance(value, dict) and not isinstance(value, AttributeDict):
             value = AttributeDict(value)
         super(AttributeDict, self).__setattr__(key, value)
         self[key] = super(AttributeDict, self).__getattribute__(key)
@@ -132,7 +131,7 @@ class Document(AttributeDict):
             # Build model structure
             if field_name in data:
                 # set presented field
-                if issubclass(type(field_obj), DocumentField):
+                if issubclass(type(field_obj), (DocumentField, ListField)):
                     val = field_obj.__set_value__(self, field_val, **kwargs)
                 else:
                     val = field_obj.__set_value__(self, field_val)

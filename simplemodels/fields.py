@@ -105,7 +105,10 @@ class SimpleField(object):
                     doc_cls = validator
                     value = doc_cls(data=value, **kwargs)
                 else:
-                    value = validator(value)
+                    if isinstance(self, ListField):
+                        value = validator(value, **kwargs)
+                    else:
+                        value = validator(value)
 
                 if value is None:
                     raise ValidationError(
@@ -341,7 +344,7 @@ class ListField(SimpleField, MutableSequence):
                 % self.__class__.__name__)
             kwargs.pop('validators')
 
-        def list_validator(val):
+        def list_validator(val, **kw):
             """Default ListField validator
 
             :param val: list item value
@@ -355,10 +358,10 @@ class ListField(SimpleField, MutableSequence):
         if is_document(of):
             document = of
             kwargs['validators'].append(
-                lambda items: [document(val) for val in items])
+                lambda items, **kw: [document(val, **kw) for val in items])
         else:
             kwargs['validators'].append(
-                lambda items: [of(val) for val in items])
+                lambda items, **kw: [of(val) for val in items])
 
         kwargs['default'] = kwargs.get('default', [])
         super(ListField, self).__init__(**kwargs)
