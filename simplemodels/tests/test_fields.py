@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import hashlib
+import unittest
 from collections import OrderedDict
 from decimal import Decimal
-import unittest
 
 import six
 
 from simplemodels import PYTHON_VERSION
-from simplemodels.exceptions import ValidationError, ImmutableFieldError, \
-    FieldRequiredError, ModelNotFoundError, FieldError
-from simplemodels.fields import IntegerField, FloatField, DecimalField, \
-    BooleanField, CharField, DocumentField, ListField, SimpleField, DictField
+from simplemodels.exceptions import FieldError, FieldRequiredError, ImmutableFieldError, ModelNotFoundError, \
+    ValidationError
+from simplemodels.fields import BooleanField, CharField, DecimalField, DictField, DocumentField, FloatField, \
+    IntegerField, ListField, SimpleField
 from simplemodels.models import Document
 
 
@@ -324,6 +324,7 @@ class ListFieldTest(unittest.TestCase):
         post.tags.append(123)
         self.assertEqual(post.tags, [1.1, 123])
 
+        # TODO: this should be uncommented as it shows the actual problem.
         # with self.assertRaises(ValidationError):
         #     post.tags.append('abc')
 
@@ -342,8 +343,36 @@ class ListFieldTest(unittest.TestCase):
                             })
         self.assertEqual(len(post.comments), 2)
         self.assertEqual(len(post.comments[:]), 2)
+
         self.assertEqual(post.comments[0].text, 'Comment #1')
+
         self.assertEqual(post.comments[1:], [{'text': 'Comment #2'}])
+        self.assertEqual(post.comments[1:], [Comment(**{'text': 'Comment #2'})])
+
+        self.assertTrue({'text': 'Comment #2'} in post.comments)
+        self.assertTrue(Comment(**{'text': 'Comment #2'}) in post.comments)
+
+        post.comments.append(dict(text='This is the last'))
+        self.assertEqual(post.comments[-1], {'text': 'This is the last'})
+        self.assertEqual(post.comments[-1], Comment(**{'text': 'This is the last'}))
+
+        self.assertTrue({'text': 'This is the last'} in post.comments)
+        self.assertTrue(Comment(**{'text': 'This is the last'}) in post.comments)
+
+    def test_sorting(self):
+        class Student(Document):
+            name = CharField()
+            courses = ListField(of=int)
+
+        student = Student(**{'name': 'foobar', 'courses': [4, 2, 1]})
+        student.courses.append(3)
+        student.courses.insert(0, 5)
+
+        self.assertEqual(student.courses, [5, 4, 2, 1, 3])
+        student.courses.sort()
+        self.assertEqual(student.courses, [1, 2, 3, 4, 5])
+        student.courses.sort(reverse=True)
+        self.assertEqual(student.courses, [5, 4, 3, 2, 1])
 
     def test_defaults(self):
         class Post(Document):
@@ -383,8 +412,11 @@ class ListFieldTest(unittest.TestCase):
             'comments': comments
         })
 
+        user.comments.append({'body': 'Last comment'})
+        user.comments.insert(0, Comment(**{'body': 'The very first comment'}))
+
         self.assertIsInstance(user, User)
-        self.assertEqual(user.comments, comments)
+        self.assertEqual(user.comments, [{'body': 'Last comment'}] + comments + [{'body': 'The very first comment'}])
         for comment in user.comments:
             self.assertTrue(comment.body)
             self.assertIsInstance(comment, Comment)
@@ -410,6 +442,34 @@ class ListFieldTest(unittest.TestCase):
         for comment in post.comments:
             self.assertEqual(len(comment), 64)
 
+        with self.assertRaises(Exception):
+            post.comments.append(100500)
+
+    def test_multiple_instances(self):
+        class Post(Document):
+            text = CharField()
+            tags = ListField(of=str, required=True)
+
+        post1 = Post(**dict(text='Post #1', tags=None)) # if the field is `required`, should not it fail here?
+        post2 = Post(**dict(text='Post #2', tags=[]))
+        post3 = Post(**dict(text='Post #2', tags=['python', 'Ruby', 'Java Script']))
+
+        post1.tags.append('Java')
+        post2.tags.extend(['C++', 'Go'])
+        post3.tags.pop()
+        post3.tags[1] = 'bash'
+
+        self.assertEqual(post1.tags, ['Java'])
+        self.assertEqual(post2.tags, ['C++', 'Go'])
+        self.assertEqual(post3.tags, ['python', 'bash'])
+
+    def test_append(self):
+        class Post(Document):
+            tags = ListField(of=str)
+
+        post = Post()
+        with self.assertRaises(ValidationError):
+            post.tags.append(100500)  # not a string, should fail
 
 class ValidatorsTest(unittest.TestCase):
 
